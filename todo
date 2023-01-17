@@ -1,0 +1,85 @@
+DONE
+
+
+rn---------------
+
+
+---------------
+
+contacts, -> since users already signup with their phone numbers, we just need a way to cross ref
+  with existing users and create a "friend request of sorts".
+  
+  this ends up being a many to many thing
+
+  we might be able to circumvent these relationships by adding more tables (later)
+
+  nah this is just one to many in this case (just 2 user ids in it, it is a mapping table already)
+
+  for now:
+    upload contacts list
+    send contact link request
+
+    get in app contacts list (tag by accepted, pending, declined)
+------------------
+
+
+
+what is a subscription
+-> has an invite link (could be more than one person)
+-> has preset rules 
+-> has an action attached (loan repayment, savings)
+--------------
+
+
+
+
+
+user, contact loans
+
+
+
+
+
+
+
+
+#invite other users to contact list
+fund wallet
+withdraw from wallet
+registration and upgrade account
+
+Johnmicheal, [1/3/2023 8:35 AM]
+Loan Actions:
+
+
+#NO POINT IN DOING THIS, JUST ON THE FE IS ALONE
+loan worthiness
+notification on loan status
+loan eligibility upgrade
+
+Johnmicheal, [1/3/2023 8:37 AM]
+Transaction Actions:
+
+View history
+notification on transaction status -> its an instant process on the BE so...
+verification
+send money - fund wallet - repay loan
+Audio chat
+
+Johnmicheal, [1/3/2023 8:40 AM]
+Contacts Action:
+
+request invite, accept invite
+quick loan from contacts
+gift funds, send funds, request funds
+shared savings(corporatives)
+crowd sourcing or funding(go fund me)
+
+Johnmicheal, [1/3/2023 8:42 AM]
+Subscription Actions:
+
+cancel, renew, update
+subs can be:
+  daily, monthly, yearly savings
+  shared savings -> maybe just propose this?
+  loan repayment... -> hmm
