@@ -10,12 +10,14 @@
 
 #maybe rename next to next_opts from user speech so it makes sense?
 
+import requests
+
 SERVER_URL  = "http://localhost:5000"
 
 
 def get_acc_balance(id):
     #interface this with BE
-    response = request.get(f"{SERVER_URL}/users/get_balance", json={"user_id": id})
+    response = requests.get(f"{SERVER_URL}/users/get_balance", json={"user_id": id})
     return response.json()["balance"]
 
 ####################################
@@ -219,7 +221,7 @@ class Graph:
         self.data = graph_data
         self.classifier = classifier
 
-    def exec_state(self, history, text, meta):
+    def exec_state(self, history, text, meta, classifier):
         
         if meta["state"] == None:
             meta["state"] == "hello"

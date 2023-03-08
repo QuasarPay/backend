@@ -16,9 +16,12 @@ from transformers import pipeline
 
 from s_graph import Graph
 
-classifier = pipeline("zero-shot-classification",
-                    model="valhalla/distilbart-mnli-12-1")
+# classifier = pipeline("zero-shot-classification",
+#                     model="valhalla/distilbart-mnli-12-1")
 
+
+MODEL_URL = "C:\\Users\\Oromidayo\\.cache\\huggingface\\hub\\models--valhalla--distilbart-mnli-12-1\\snapshots\\506336d4214470e3b3b36021358daae28e25ceac"
+classifier = pipeline("zero-shot-classification", model=MODEL_URL)
 
 whisper_model = whisper.load_model("base")
 
@@ -74,11 +77,17 @@ def extract_json(func):
     @wraps(func)
 
     def wrapper(*args, **kwargs):
-        if (content_type == 'application/json'):
-            data = request.get_json()
-            return func(data, *args, **kwargs)
-        else:
-            return jsonify({'error': 'Content-Type not supported!' })
+        
+        
+        probs = classifier("sdfsdfsdf", ["SDFsdfsdf", "sfsdfsd"])
+        nstate = probs["labels"][0]
+        return jsonify({"message": nstate})
+        # content_type = request.headers.get("Content-Type")
+        # if (content_type == 'application/json'):
+        #     data = request.get_json()
+        #     return func(data, *args, **kwargs)
+        # else:
+        #     return jsonify({'error': 'Content-Type not supported!' })
 
     return wrapper
 
@@ -91,6 +100,7 @@ def compute_max_loan(user):
 @app.route('/users', methods=['POST'])
 @extract_json
 def create_user(data):
+    print(data)
     user = User(username=data['username'], email=data['email'], password=data['password'], 
         phone_number= data["phone_number"], 
         firstname= data["firstname"], surname= data["surname"])
@@ -102,7 +112,7 @@ def create_user(data):
 @app.route('/users/get_balance', methods=['GET'])
 @extract_json
 def get_user_balance(data):
-    user = User.query.get(id=data["user_id"])
+    user = User.query.filter_by(id=data["user_id"]).first()
     return jsonify({'balance': user.balance})
 
 
@@ -116,7 +126,7 @@ def get_user(data):
 @app.route('/users/', methods=['PUT'])
 @extract_json
 def update_user(data):
-    user = User.query.get(data["user_id"])
+    user = User.query.filter_by(data["user_id"]).first()
     user.username = data['username']
     user.email = data['email']
     user.phone_number = data['phone_number']
@@ -128,7 +138,7 @@ def update_user(data):
 @app.route('/users/', methods=['DELETE'])
 @extract_json
 def delete_user(data):
-    user = User.query.get(data["user_id"])
+    user = User.query.filter_by(data["user_id"]).first()
     if user:
         db.session.delete(user)
         db.session.commit()
@@ -145,7 +155,7 @@ def get_user_loans(user_id):
 @app.route('/bank_loans', methods=['POST'])
 @extract_json
 def create_bank_loan(data):
-    user = User.query.get(data['user_id'])
+    user = User.query.filter_by(data['user_id']).first()
     if user:
         if data['amount'] <= compute_max_loan(user):
             loan = BankLoan(user=user, amount=data['amount'], interest_rate=data['interest_rate'])
@@ -160,8 +170,10 @@ def create_bank_loan(data):
 @app.route('/bank_loans/repay/', methods=['POST'])
 @extract_json
 def repay_bank_loan(data):
-    loan = BankLoan.query.get(data["loan_id"])
-    user = User.query.get(loan.user_id)
+    interest_rate = 0.2
+
+    loan = BankLoan.query.filter_by(data["loan_id"]).first()
+    user = User.query.filter_by(id=loan.user_id).first()
     if loan and user:
         amount_owed = loan.amount * interest_rate * ((datetime.datetime.now() - loan.start_date).days / 365)
         if user.balance >= amount_owed:
@@ -179,9 +191,9 @@ def repay_bank_loan(data):
 
 @app.route('/bank_loans', methods=['DELETE'])
 @extract_json
-def revert_bank_loan(datra):
-    loan = BankLoan.query.get(data["loan_id"])
-    user = User.query.get(loan.user_id)
+def revert_bank_loan(data):
+    loan = BankLoan.query.filter_by(id=data["loan_id"]).first()
+    user = User.query.filter_by(id=loan.user_id).first()
     if loan and user:
         user.balance -= loan.amount #very rudimentary
         db.session.delete(loan)
@@ -196,8 +208,7 @@ def revert_bank_loan(datra):
 @app.route('/subscriptions/create', methods=['POST'])
 @extract_json
 def create_subscription(data):
-    user = User.query.get(data['user_id'])
-    subscription = Subscription(creator=user_id, name=data['name'], 
+    subscription = Subscription(creator=data["user_id"], name=data['name'], 
             amount=data['amount'], interval=data['interval'], 
             action=data['action'])
     db.session.add(subscription)
@@ -208,17 +219,17 @@ def create_subscription(data):
 @extract_json
 def join_subscription(data, subscription_id):
     user = User.query.get(data['user_id'])
-    subscription = Subscription.query.get(id=data['subscription_id'])
+    subscription = Subscription.query.filter_by(id=data['subscription_id']).first()
 
     #some many to many shit to happen here
 
     db.session.commit()
-    return jsonify({'message': 'Subscription addded successfully'})
+    return jsonify({'message': 'Subscription added successfully'})
 
 @app.route('/subscriptions/', methods=['PUT'])
 @extract_json
 def update_subscription(data):
-    subscription = Subscription.query.get(data['subscription_id'])
+    subscription = Subscription.query.filter_by(data['subscription_id']).first()
     if data["owner_id"] == subscription.creator_id:
         #maybe needs more nuance?
         subscription.name = data['name']
@@ -233,8 +244,8 @@ def update_subscription(data):
 
 @app.route('/subscriptions/', methods=['DELETE'])
 @extract_json
-def delete_subscription():
-    subscription = Subscription.query.get(data['subscription_id'])
+def delete_subscription(data):
+    subscription = Subscription.query.filter_by(id=data['subscription_id']).first()
     db.session.delete(subscription)
     db.session.commit()
     return jsonify({'message': 'Subscription deleted successfully'})
@@ -244,10 +255,10 @@ def delete_subscription():
 @app.route('/contacts/upload', methods=['POST'])
 @extract_json
 def create_contact(data):
-    user = User.query.get(data['user_id'])
+    user = User.query.filter_by(id=data['user_id']).first()
     phone_numbers = data['phone_numbers']
     for number in  phone_numbers:
-        corresponding_user = User.query.get(phone_number = number)
+        corresponding_user = User.query.filter_by(phone_number = number).first()
         if corresponding_user:
             #create new contact
             contact = Contact(luser_id=user.id, ruser_id= corresponding_user.id, phone_number=data['phone_number'] )
@@ -267,7 +278,7 @@ def get_contacts(data):
 @app.route('/contacts', methods=['DELETE'])
 @extract_json
 def delete_contact(data):
-    contact = Contact.query.get(data["contact_id"])
+    contact = Contact.query.filter_by(id=data["contact_id"]).first()
     if contact:
         db.session.delete(contact)
         db.session.commit()
@@ -280,9 +291,9 @@ def delete_contact(data):
 @app.route('/transactions', methods=['POST'])
 @extract_json
 def create_transaction(data):
-    sender = User.query.get(data['user_id'])
-    receiver = User.query.get(data['user_id'])
-    if user.balance >= data['amount'] and sender and receiver:
+    sender = User.query.filter_by(data['user_id']).first()
+    receiver = User.query.filter_by(data['user_id']).first()
+    if  sender and receiver and sender.balance >= data['amount']:
         transaction = Transaction(sender_id = data['sender_id'], receiver_id= data['receiver_id'], amount=data['amount'], description=data['description'], category=data['category'])
         sender.balance -= transaction.amount
         receiver.balance += transaction.amount
@@ -312,11 +323,11 @@ def get_transactions(data):
 def revert_transaction(data):
     transaction = Transaction.query.get(data['transaction_id'])
     if transaction:
-        sender = User.query.get(transaction.sender_id)
-        receiver = User.query.get(transaction.receiver_id)
+        sender = User.query.filter_by(transaction.sender_id).first()
+        receiver = User.query.filter_by(transaction.receiver_id).first()
         if sender and receiver:
             sender.balance += transaction.amount
-            receiever.balance -= transaction.amount
+            receiver.balance -= transaction.amount
             db.session.delete(transaction)
             db.session.add(sender)
             db.session.add(receiver)
@@ -331,17 +342,17 @@ def revert_transaction(data):
 def ai_chat(data):
     fname = f"{random.randrange(0,10000)}_in.mp3"
     with open(fname, "wb") as f:
-        f.write(base64.b64decode(_json["audio"]))
+        f.write(base64.b64decode(data["audio"]))
 
     #meta should include user_id
 
     text = process_whisper(fname)
     os.remove(fname)
     history = data["history"]
-    state  = data["state"]
+    # state  = data["state"]
     meta = data["meta"]
-    history, next_state, text_output, meta = s_graph.exec_state(history, text, state, meta)
-    binary_audio = tts(response)
+    history, next_state, text_output, meta = sgraph.exec_state(history, text, meta, classifier)
+    binary_audio = tts(text_output)
 
     return jsonify({"text" : text_output, "audio_raw" : binary_audio,
  "history": history, "next_state": next_state, "meta": meta})
