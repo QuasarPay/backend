@@ -20,7 +20,7 @@ from s_graph import Graph
 #                     model="valhalla/distilbart-mnli-12-1")
 
 
-MODEL_URL = "C:\\Users\\Oromidayo\\.cache\\huggingface\\hub\\models--valhalla--distilbart-mnli-12-1\\snapshots\\506336d4214470e3b3b36021358daae28e25ceac"
+MODEL_URL = "C:\\Users\\Admin\\.cache\\huggingface\\hub\\models--valhalla--distilbart-mnli-12-1\\snapshots\\506336d4214470e3b3b36021358daae28e25ceac"
 classifier = pipeline("zero-shot-classification", model=MODEL_URL)
 
 whisper_model = whisper.load_model("base")
@@ -79,15 +79,15 @@ def extract_json(func):
     def wrapper(*args, **kwargs):
         
         
-        probs = classifier("sdfsdfsdf", ["SDFsdfsdf", "sfsdfsd"])
-        nstate = probs["labels"][0]
-        return jsonify({"message": nstate})
-        # content_type = request.headers.get("Content-Type")
-        # if (content_type == 'application/json'):
-        #     data = request.get_json()
-        #     return func(data, *args, **kwargs)
-        # else:
-        #     return jsonify({'error': 'Content-Type not supported!' })
+        # probs = classifier("sdfsdfsdf", ["SDFsdfsdf", "sfsdfsd"])
+        # nstate = probs["labels"][0]
+        # return jsonify({"message": nstate})
+        content_type = request.headers.get("Content-Type")
+        if (content_type == 'application/json'):
+            data = request.get_json()
+            return func(data, *args, **kwargs)
+        else:
+            return jsonify({'error': 'Content-Type not supported!' })
 
     return wrapper
 
@@ -337,22 +337,28 @@ def revert_transaction(data):
     else:
         return jsonify({"error": "Transaction does not exist."})
 
-@app.route('/ai_chat', methods=['DELETE'])
+
+@app.route('/ai_chat', methods=['POST'])
 @extract_json
 def ai_chat(data):
-    fname = f"{random.randrange(0,10000)}_in.mp3"
+    fname = f"{random.randrange(0,10000)}_in.ogg"
     with open(fname, "wb") as f:
         f.write(base64.b64decode(data["audio"]))
 
-    #meta should include user_id
+    # meta should include user_id
 
-    text = process_whisper(fname)
+    text = process_whisper(fname)   
+
+    # text = data["prompt"]
+    print(text)
     os.remove(fname)
     history = data["history"]
     # state  = data["state"]
     meta = data["meta"]
     history, next_state, text_output, meta = sgraph.exec_state(history, text, meta, classifier)
     binary_audio = tts(text_output)
+
+    meta["state"] = next_state
 
     return jsonify({"text" : text_output, "audio_raw" : binary_audio,
  "history": history, "next_state": next_state, "meta": meta})
